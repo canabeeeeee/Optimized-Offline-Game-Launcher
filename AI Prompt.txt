@@ -1,0 +1,234 @@
+using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
+using System.Windows.Forms;
+using System.IO;
+using System.Diagnostics;
+
+class GameLauncherPro : Form {
+    FlowLayoutPanel gridFlowPanel;
+    Panel headerPanel;
+    Label lblTitle;
+    PillButton btnDisable;
+    string gamesFolder = "Games";
+    ToolTip toolTip;
+
+    // Strict 2D Theme Colors from Screenshot (189).png
+    Color colorDarkBg = Color.FromArgb(30, 30, 30);       // Deep Purple Background
+    Color colorHeader = Color.FromArgb(113, 75, 156);     // Lighter Purple Header
+    Color colorButton = Color.FromArgb(17, 5, 36);        // Very Dark Pill Button
+    Color colorBorder = Color.FromArgb(80, 255, 255, 255); // Faint 2D flat border
+
+    const int ItemWidth = 160;
+    const int ItemHeight = 200;
+
+    public GameLauncherPro() {
+        // 1. Setup Full Screen Form
+        this.Text = "Apps & Games";
+        this.FormBorderStyle = FormBorderStyle.None; 
+        this.WindowState = FormWindowState.Maximized; 
+        this.BackColor = colorDarkBg;
+        this.DoubleBuffered = true;
+
+        // 2. Setup Header Panel (Height fixed at 120)
+        headerPanel = new Panel() {
+            BackColor = colorHeader,
+            Location = new Point(0, 0),
+            Height = 120,
+            Width = this.Width,
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+        };
+
+        lblTitle = new Label() {
+            Text = "Apps & Games",
+            Font = new Font("Google Sans", 32f, FontStyle.Regular),
+            ForeColor = Color.FromArgb(245, 245, 245),
+            AutoSize = true,
+            Location = new Point(50, 35),
+            BackColor = Color.Transparent
+        };
+        headerPanel.Controls.Add(lblTitle);
+
+        // 3. Setup Custom Pill Button
+        btnDisable = new PillButton() {
+            Text = "Disable GameMode",
+            Font = new Font("Segoe UI", 11f, FontStyle.Regular),
+            ForeColor = Color.White,
+            BackColor = colorButton,
+            Size = new Size(180, 45),
+            Cursor = Cursors.Hand
+        };
+        btnDisable.Click += (s, e) => {
+            if (File.Exists("Disable.bat")) {
+                Process.Start(new ProcessStartInfo("Disable.bat") { WindowStyle = ProcessWindowStyle.Hidden });
+            }
+            Application.Exit();
+        };
+        headerPanel.Controls.Add(btnDisable);
+        this.Controls.Add(headerPanel);
+
+        // 4. Setup Grid Panel
+        // Explicitly starting it BELOW the header (Y = 120) to prevent ANY hiding/overlap
+        gridFlowPanel = new FlowLayoutPanel() {
+            Location = new Point(0, 120),
+            BackColor = Color.Transparent,
+            AutoScroll = true,
+            WrapContents = true
+        };
+        this.Controls.Add(gridFlowPanel);
+
+        toolTip = new ToolTip();
+
+        // 5. Layout Engine
+        this.Resize += ProcessLayout;
+        this.Load += (s, e) => { ProcessLayout(null, null); LoadGames(); };
+    }
+
+    void ProcessLayout(object sender, EventArgs e) {
+        headerPanel.Width = this.Width;
+        btnDisable.Location = new Point(this.Width - btnDisable.Width - 50, 38);
+
+        // Lock grid to take remaining screen space below header
+        gridFlowPanel.Size = new Size(this.Width, this.Height - 120);
+
+        // Calculate dynamic padding to perfectly center the grid
+        int scrollBarWidth = SystemInformation.VerticalScrollBarWidth;
+        int availableWidth = this.Width - scrollBarWidth;
+        int cols = availableWidth / ItemWidth;
+        if (cols > 5) cols = 5; // 5 items per row max
+        if (cols < 1) cols = 1;
+
+        int totalGridWidth = cols * ItemWidth;
+        int padX = Math.Max(0, (this.Width - totalGridWidth) / 2);
+
+        // EXACTLY 30px Top Padding applied here
+        gridFlowPanel.Padding = new Padding(padX, 30, padX, 30); 
+    }
+
+    void LoadGames() {
+        if (!Directory.Exists(gamesFolder)) Directory.CreateDirectory(gamesFolder);
+
+        foreach (var file in Directory.GetFiles(gamesFolder, "*.lnk")) {
+            gridFlowPanel.Controls.Add(new FlatAppItem(file, colorBorder, toolTip));
+        }
+    }
+
+    // --- CUSTOM CONTROLS FOR 2D HIGH-RES UI ---
+
+    class FlatAppItem : Control {
+        string fullPath;
+        string appName;
+        Image appIcon;
+        Color border;
+
+        public FlatAppItem(string path, Color flatBorder, ToolTip tt) {
+            fullPath = path;
+            border = flatBorder;
+            this.Size = new Size(ItemWidth, ItemHeight); 
+            this.Cursor = Cursors.Hand;
+            this.DoubleBuffered = true;
+
+            // Remove .lnk and truncate cleanly
+            appName = Path.GetFileNameWithoutExtension(path);
+            tt.SetToolTip(this, appName);
+            if (appName.Length > 18) appName = appName.Substring(0, 16) + "...";
+
+            // Extract Icon (Standard WinForms extraction)
+            try {
+                using (Icon extractedIcon = Icon.ExtractAssociatedIcon(fullPath)) {
+                    appIcon = extractedIcon.ToBitmap();
+                }
+            } catch { appIcon = null; }
+
+            this.Click += (s, e) => {
+                if (File.Exists(fullPath)) Process.Start(new ProcessStartInfo(fullPath) { UseShellExecute = true });
+            };
+        }
+
+        protected override void OnPaint(PaintEventArgs e) {
+            Graphics g = e.Graphics;
+
+            // Maximum quality rendering settings for graphics & icons
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+            // Highest quality text rendering hint
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            // 1. Draw 2D Outline Box
+            int boxSize = 120;
+            Rectangle rect = new Rectangle((this.Width - boxSize) / 2, 10, boxSize, boxSize);
+            using (Pen outlinePen = new Pen(border, 1.2f)) {
+                DrawRoundedRect(g, rect, 20, null, outlinePen);
+            }
+
+            // 2. Draw Clean Scaled Icon (No grey background)
+            if (appIcon != null) {
+                int iconSize = 64; // Scaled smoothly from 32x32
+                Rectangle iconRect = new Rectangle(rect.X + (boxSize - iconSize) / 2, rect.Y + (boxSize - iconSize) / 2, iconSize, iconSize);
+                g.DrawImage(appIcon, iconRect);
+            }
+
+            // 3. Draw High Resolution Text using TextRenderer (Sharper than Graphics.DrawString)
+            Rectangle textRect = new Rectangle(0, rect.Bottom + 12, this.Width, 40);
+            TextRenderer.DrawText(
+                e.Graphics, 
+                appName, 
+                new Font("Segoe UI", 10.5f, FontStyle.Regular), 
+                textRect, 
+                Color.White, 
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak
+            );
+        }
+    }
+
+    class PillButton : Control {
+        public PillButton() { this.DoubleBuffered = true; }
+
+        protected override void OnPaint(PaintEventArgs e) {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            // Draw solid dark pill shape
+            using (SolidBrush bgBrush = new SolidBrush(this.BackColor)) {
+                DrawRoundedRect(g, new Rectangle(0, 0, this.Width - 1, this.Height - 1), this.Height / 2, bgBrush, null);
+            }
+
+            // High res text rendering for the button
+            TextRenderer.DrawText(
+                g, 
+                this.Text, 
+                this.Font, 
+                new Rectangle(0, 0, this.Width, this.Height), 
+                this.ForeColor, 
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
+            );
+        }
+    }
+
+    // Helper for 2D rounded corners
+    static void DrawRoundedRect(Graphics g, Rectangle bounds, int radius, Brush fillBrush, Pen outlinePen) {
+        int d = radius * 2;
+        using (GraphicsPath path = new GraphicsPath()) {
+            path.AddArc(bounds.X, bounds.Y, d, d, 180, 90);
+            path.AddArc(bounds.Right - d, bounds.Y, d, d, 270, 90);
+            path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
+            path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+
+            if (fillBrush != null) g.FillPath(fillBrush, path);
+            if (outlinePen != null) g.DrawPath(outlinePen, path);
+        }
+    }
+
+    [STAThread]
+    static void Main() {
+        Application.EnableVisualStyles();
+        Application.Run(new GameLauncherPro());
+    }
+}
+
+The given code above is  just a normal full screen app of the game mode Game launcher used to launch apps from a bare metal low level application , but now we are going to revamp it , before it was just icons of the shortcuts just scaled up , but now were implementing tile Like UI for it , This is an low level launcher as part of our GameMode in this UI , games are listed in the screen in 2 x 4 tile grid as shown in the UI referrence image template provided ui.png,  and on the top right you can see "Disable GameMode" Which executes the "Disable.bat" in the same folder as this executable is found , the background is a gradient as the colour given custum , all the color configs are in the top code , the background is a linear gradient tilted in a custum angle so make sure to provide an additional top custumization section to custumize the gradient angle rendering , and those tiles represents the tile_image like this the corresponding Game.Ink in Game folder where the executable is , there is another folder called Images, in images there are png files , if there is a game named "Grand Theft Auto.lnk" , the app should take the corresponding "Grand Theft Auto.png" in the Images Folder if not found , place , "no_image.png" in that folder , 
