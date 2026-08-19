@@ -26,7 +26,7 @@ Instead of relying on heavy third-party optimization software, this project uses
 
 ## 🛠️ How It Works (Under the Hood)
 
-When you trigger `StartGameMode.bat`, the script requests Administrator privileges and uses an embedded PowerShell command to safely map all running processes (ignoring critical `Session 0` system services to prevent Blue Screens). It logs the executable paths to `log.txt`, terminates them, disables physical network adapters, and launches the custom UI.
+When you trigger `Enable.bat`, the script requests Administrator privileges and uses an embedded PowerShell command to safely map all running processes (ignoring critical `Session 0` system services to prevent Blue Screens). It logs the executable paths to `log.txt`, terminates them, disables physical network adapters, and launches the custom UI.
 
 The C# GUI reads any game shortcuts (`.lnk` files) placed in a local `Games` folder. It extracts the native icons, scales them smoothly, and displays them in a strict 2D layout. Once you finish gaming, clicking **Disable GameMode** triggers the reverse batch file, bringing Windows back to its normal state seamlessly.
 
@@ -50,7 +50,7 @@ This project requires **zero third-party dependencies** or IDEs (like Visual Stu
 
 1. Create a folder named `Games` in the same directory as the scripts and executable.
 2. Place the shortcuts (`.lnk` files) of the games you want to play inside the `Games` folder. 
-3. Double-click `StartGameMode.bat`. 
+3. Double-click `Enable.bat`. 
 4. Your desktop will disappear, background apps will close, and the Game Launcher Pro UI will appear. 
 5. Click any game to play.
 6. When finished, click **Disable GameMode** to restore your PC to its standard state.
