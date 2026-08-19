@@ -10,10 +10,8 @@ Instead of relying on heavy third-party optimization software, this project uses
 
 | File | Type | Description |
 | :--- | :--- | :--- |
-| `StartGameMode.bat` | Batch / PowerShell | The aggressive initiator. Saves running background apps to a log, forcefully closes them, kills Windows Explorer, disables the physical internet adapter, and boots the launcher. |
-| `Disable.bat` | Batch / PowerShell | The restoration script. Re-enables the internet adapter, restarts Windows Explorer, reads the log file to relaunch your previous background apps (minimized), and cleans up the log. |
-| `GameLauncherPro.cs` | C# Source Code | The high-resolution, 2D hardware-accelerated GUI. Features real-time hardware monitoring and a dynamic app grid. |
-
+| `Enable.bat` | Batch / PowerShell | The aggressive initiator. Saves running background apps to a log, forcefully closes them, kills Windows Explorer, disables the physical internet adapter, and boots the launcher. |
+| `Disable.bat` | Batch / PowerShell | The restoration script. Re-enables the internet adapter, restarts Windows Explorer, reads the log file to relaunch your previous background apps (minimized), and cleans up the log. |we
 ---
 
 ## ✨ Key Features
@@ -33,7 +31,6 @@ When you trigger `StartGameMode.bat`, the script requests Administrator privileg
 The C# GUI reads any game shortcuts (`.lnk` files) placed in a local `Games` folder. It extracts the native icons, scales them smoothly, and displays them in a strict 2D layout. Once you finish gaming, clicking **Disable GameMode** triggers the reverse batch file, bringing Windows back to its normal state seamlessly.
 
 ---
-
 ## ⚙️ Compilation & Installation
 
 This project requires **zero third-party dependencies** or IDEs (like Visual Studio or MinGW) to compile. It utilizes the C# compiler (`csc.exe`) secretly built into every modern Windows installation.
