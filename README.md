@@ -48,10 +48,10 @@ This project requires **zero third-party dependencies** or IDEs (like Visual Stu
 
 ## 🚀 Usage
 
-1. Create a folder named `Games` in the same directory as the scripts and executable.
-2. Place the shortcuts (`.lnk` files) of the games you want to play inside the `Games` folder. 
+1. Place the shortcuts (`.lnk` files) of the games you want to play inside the `Games` folder. 
+2. Place the Game posters (Landscape) as PNG ('.png' files) of the games shortcuts in the game folder should have same filename as Game shortcut*
 3. Double-click `Enable.bat`. 
-4. Your desktop will disappear, background apps will close, and the Game Launcher Pro UI will appear. 
+4. Your desktop will disappear, background apps will close, and the Game Launcher Pro UI will appear.*
 5. Click any game to play.
 6. When finished, click **Disable GameMode** to restore your PC to its standard state.
 
